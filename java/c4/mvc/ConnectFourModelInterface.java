@@ -1,6 +1,6 @@
 package c4.mvc;
 
-public interface ConnectFourModelInterface {
+public interface  ConnectFourModelInterface {
 	final int PLAYER1 = 1;
 	final int PLAYER2 = 2;
 	final int EMPTY = -1;
