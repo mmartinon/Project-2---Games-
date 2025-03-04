@@ -1,5 +1,7 @@
 package c4.players;
 
+import java.util.ArrayList;
+
 import c4.mvc.ConnectFourModel;
 import c4.mvc.ConnectFourModelInterface;
 
@@ -21,6 +23,27 @@ public class ConnectFourAIPlayer extends ConnectFourPlayer {
             }
         }
         return -1;
+    }
+
+    public int[] actions(int[][] state)
+    {
+        ArrayList<Integer> moves = new ArrayList<Integer>();
+
+        for(int i=0; i<7; i++)
+        {
+            if(state[i][0] == -1)
+            {
+                moves.add(i);
+            }
+        }
+
+        int[] availActions = new int[moves.size()];
+        for(int i=0; i<availActions.length; i++)
+        {
+            availActions[i] = moves.get(i);
+        }
+
+        return availActions;  
     }
 
     public boolean terminalTest() {
