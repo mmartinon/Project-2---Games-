@@ -1,237 +1,221 @@
 package c4.players;
 
 import c4.mvc.ConnectFourModel;
-import c4.mvc.ConnectFourModelInterface;
-import java.util.ArrayList;
 
 public class ConnectFourAIPlayer extends ConnectFourPlayer {
-    private ConnectFourModelInterface model;
-    private int me;
-    private int opponent;
+    private ConnectFourModel model;
+    private int maxDepth;
 
-    public ConnectFourAIPlayer(ConnectFourModelInterface model) {
+    /**
+     * Constructor with default depth
+     */
+    public ConnectFourAIPlayer(ConnectFourModel model) {
         this.model = model;
+        this.maxDepth = 6; // default max search depth
     }
 
-    // Original getMove() comment: Called by the game controller to obtain the AI's next move.
+    /**
+     * Constructor with customizable depth
+     */
+    public ConnectFourAIPlayer(ConnectFourModel model, int maxDepth) {
+        this.model = model;
+        this.maxDepth = maxDepth;
+    }
+
+    /**
+     * Determines the best move using Alpha-Beta search algorithm
+     */
     @Override
     public int getMove() {
-        me = model.getTurn();
-        opponent = (me == 1) ? 2 : 1;
-        return alphaBetaSearch();
+        return alphaBetaSearch(model.getGrid(), maxDepth);
     }
 
-    // Original terminalTest() comment: Returns true if the game is over.
-    public boolean terminalTest() {
-        return terminalTest(getBoardCopy());
-    }
-
-    // Original actions() comment: Returns available actions.
-    public int[] actions(int[][] state) {
-        ArrayList<Integer> moves = new ArrayList<Integer>();
-        for (int i = 0; i < 7; i++) {
-            if (state[i][0] == -1) {
-                moves.add(i);
-            }
-        }
-        int[] availActions = new int[moves.size()];
-        for (int i = 0; i < availActions.length; i++) {
-            availActions[i] = moves.get(i);
-        }
-        return availActions;
-    }
-
-    // Original results() comment: Returns a new board state after applying the action.
-    public int[][] results(int[][] state, int action) {
-        int[][] newState = new int[7][6];
-        for (int row = 0; row < 6; row++) {
-            for (int col = 0; col < 7; col++) {
-                newState[col][row] = state[col][row];
-            }
-        }
-        int player = 0;
-        int num1s = 0;
-        int num2s = 0;
-        for (int row = 0; row < 6; row++) {
-            for (int col = 0; col < 7; col++) {
-                if (state[col][row] == 1) {
-                    num1s++;
-                } else if (state[col][row] == 2) {
-                    num2s++;
-                }
-            }
-        }
-        if (num1s > num2s) {
-            player = 2;
-        } else {
-            player = 1;
-        }
-        int row = 5;
-        while (state[6][row] != -1) {
-            row--;
-        }
-        newState[action][row] = player;
-        return newState;
-    }
-
-    private int alphaBetaSearch() {
+    /**
+     * Alpha-Beta search algorithm to find the best move
+     */
+    public int alphaBetaSearch(int[][] state, int max) {
+        int bestMove = -1;
+        int bestValue = Integer.MIN_VALUE;
         int alpha = Integer.MIN_VALUE;
         int beta = Integer.MAX_VALUE;
-        int bestValue = Integer.MIN_VALUE;
-        int bestMove = -1;
-        int[][] board = getBoardCopy();
-        boolean[] validMoves = model.getValidMoves();
-        for (int col = 0; col < 7; col++) {
-            if (validMoves[col]) {
-                int[][] newBoard = copyBoard(board);
-                applyMove(newBoard, col, me);
-                int value = minValue(newBoard, alpha, beta);
-                if (value > bestValue) {
-                    bestValue = value;
-                    bestMove = col;
-                }
-                alpha = Math.max(alpha, bestValue);
-                if (alpha >= beta) {
-                    break;
-                }
+
+        for (int action : actions(state)) { // get available moves
+            int[][] newState = result(state, action);
+
+            int value = minValue(newState, alpha, beta, 1, maxDepth);
+
+            if (value > bestValue) {
+                bestValue = value;
+                bestMove = action;
             }
-        }
-        if (bestMove == -1) {
-            for (int col = 0; col < 7; col++) {
-                if (validMoves[col]) {
-                    return col;
-                }
-            }
+            alpha = Math.max(alpha, bestValue);
         }
         return bestMove;
     }
 
-    private int maxValue(int[][] board, int alpha, int beta) {
-        if (terminalTest(board)) {
-            return utility(board);
+    /**
+     * Maximizing function for Alpha-Beta pruning
+     */
+    public int maxValue(int[][] state, int alpha, int beta, int depth, int maxDepth) {
+        if (terminalTest(state) || depth >= maxDepth) {
+            return utility(state);
         }
+
         int value = Integer.MIN_VALUE;
-        for (int col = 0; col < 7; col++) {
-            if (canPlay(board, col)) {
-                int[][] newBoard = copyBoard(board);
-                applyMove(newBoard, col, me);
-                value = Math.max(value, minValue(newBoard, alpha, beta));
-                alpha = Math.max(alpha, value);
-                if (alpha >= beta) {
-                    break;
-                }
-            }
+        for (int action : actions(state)) {
+            value = Math.max(value, minValue(result(state, action), alpha, beta, depth + 1, maxDepth));
+            if (value >= beta)
+                return value;
+            alpha = Math.max(alpha, value);
         }
         return value;
     }
 
-    private int minValue(int[][] board, int alpha, int beta) {
-        if (terminalTest(board)) {
-            return utility(board);
+    /**
+     * Minimizing function for Alpha-Beta pruning
+     */
+    public int minValue(int[][] state, int alpha, int beta, int depth, int maxDepth) {
+        if (terminalTest(state) || depth >= maxDepth) {
+            return utility(state);
         }
+
         int value = Integer.MAX_VALUE;
-        for (int col = 0; col < 7; col++) {
-            if (canPlay(board, col)) {
-                int[][] newBoard = copyBoard(board);
-                applyMove(newBoard, col, opponent);
-                value = Math.min(value, maxValue(newBoard, alpha, beta));
-                beta = Math.min(beta, value);
-                if (beta <= alpha) {
-                    break;
-                }
-            }
+        for (int action : actions(state)) {
+            value = Math.min(value, maxValue(result(state, action), alpha, beta, depth + 1, maxDepth));
+            if (value <= alpha)
+                return value;
+            beta = Math.min(beta, value);
         }
         return value;
     }
 
-    private boolean terminalTest(int[][] board) {
-        return (checkWinner(board) != 0) || isBoardFull(board);
+    /**
+     * Evaluates a board state for the ai player
+     */
+    public int utility(int[][] state) {
+        int winner = model.checkForWinner();
+        int currentPlayer = model.getTurn();
+        int opponent = (currentPlayer == 1) ? 2 : 1;
+    
+        if (winner == currentPlayer) return 1000;
+        if (winner == opponent) return -1000;
+        if (model.checkForDraw()) return 0;
+    
+        return evaluateBoard(state, currentPlayer) - evaluateBoard(state, opponent) * 2;
     }
-
-    private int utility(int[][] board) {
-        int winner = checkWinner(board);
-        if (winner == me) {
-            return 1000;
-        } else if (winner == opponent) {
-            return -1000;
-        }
-        return 0;
+    
+    /**
+     * Evaluates board state to assign a score 
+     */
+    public int evaluateBoard(int[][] state, int player) {
+        int score = 0;
+    
+        score += evaluateDirection(state, player, 1, 0); // Horizontal
+        score += evaluateDirection(state, player, 0, 1); // Vertical
+        score += evaluateDirection(state, player, 1, 1); // Diagonal \
+        score += evaluateDirection(state, player, 1, -1); // Diagonal /
+    
+        score += centerControl(state, player); // Center control advantage
+    
+        return score;
     }
-
-    private int checkWinner(int[][] board) {
-        for (int r = 0; r < 6; r++) {
-            for (int c = 0; c < 4; c++) {
-                int p = board[c][r];
-                if (p != 0 && p == board[c + 1][r] && p == board[c + 2][r] && p == board[c + 3][r]) {
-                    return p;
+    
+    /**
+     * Evaluates potential four-in-a-row positions for the player.
+     */
+    public int evaluateDirection(int[][] state, int player, int dX, int dY) {
+        int score = 0;
+    
+        for (int col = 0; col < 7; col++) {
+            for (int row = 0; row < 6; row++) {
+                int count = 0, spaces = 0;
+    
+                for (int i = 0; i < 4; i++) { // Check 4-in-a-row windows
+                    int x = col + dX * i;
+                    int y = row + dY * i;
+    
+                    if (x >= 0 && x < 7 && y >= 0 && y < 6) {
+                        if (state[x][y] == player) count++;
+                        else if (state[x][y] == 0) spaces++;
+                    }
                 }
+    
+                if (count == 4) score += 1000; // Winning move
+                else if (count == 3 && spaces == 1) score += 50; // Almost winning
+                else if (count == 2 && spaces == 2) score += 10; // Good potential move
+                else if (count == 1 && spaces == 3) score += 1; // Small advantage
             }
         }
-        for (int c = 0; c < 7; c++) {
-            for (int r = 0; r < 3; r++) {
-                int p = board[c][r];
-                if (p != 0 && p == board[c][r + 1] && p == board[c][r + 2] && p == board[c][r + 3]) {
-                    return p;
-                }
-            }
-        }
-        for (int c = 0; c < 4; c++) {
-            for (int r = 0; r < 3; r++) {
-                int p = board[c][r];
-                if (p != 0 && p == board[c + 1][r + 1] && p == board[c + 2][r + 2] && p == board[c + 3][r + 3]) {
-                    return p;
-                }
-            }
-        }
-        for (int c = 0; c < 4; c++) {
-            for (int r = 3; r < 6; r++) {
-                int p = board[c][r];
-                if (p != 0 && p == board[c + 1][r - 1] && p == board[c + 2][r - 2] && p == board[c + 3][r - 3]) {
-                    return p;
-                }
-            }
-        }
-        return 0;
+    
+        return score;
     }
 
-    private boolean isBoardFull(int[][] board) {
-        for (int c = 0; c < 7; c++) {
-            if (board[c][5] == 0) {
-                return false;
+    /**
+     * Prioritizes controlling the center column
+     */
+    public int centerControl(int[][] state, int player) {
+        int centerColumn = 3;
+        int score = 0;
+    
+        for (int row = 0; row < 6; row++) {
+            if (state[centerColumn][row] == player) {
+                score += 5; // Prioritizing control of center
             }
         }
-        return true;
+    
+        return score;
     }
 
-    private boolean canPlay(int[][] board, int col) {
-        return board[col][5] == 0;
+    public boolean terminalTest(int[][] state) {
+        return model.checkForWinner() > 0 || model.checkForDraw();
     }
 
-    private void applyMove(int[][] board, int col, int player) {
-        for (int r = 0; r < 6; r++) {
-            if (board[col][r] == 0) {
-                board[col][r] = player;
+    /**
+     * Generates a list of available moves (non-full columns).
+     */
+    public int[] actions(int[][] state) {
+        ArrayList<Integer> moves = new ArrayList<Integer>();
+
+        for (int col = 0; col < 7; col++) {
+            if (state[col][0] == -1) {
+                moves.add(col);
+            }
+        }
+        return moves.stream().mapToInt(i -> i).toArray();
+    }
+
+    /**
+     * Simulates the board state after making a move.
+     */
+    public int[][] result(int[][] state, int action) {
+        int[][] newState = new int[7][6];
+
+        // copy the state
+        for (int col = 0; col < 7; col++) {
+            System.arraycopy(state[col], 0, newState[col], 0, 6);
+        }
+
+        // Drop the piece in the lowest available row
+        for (int row = 5; row >= 0; row--) {
+            if (newState[action][row] == -1) {
+                newState[action][row] = model.getTurn();
                 break;
             }
         }
+
+        return newState;
     }
 
-    private int[][] getBoardCopy() {
-        if (model instanceof ConnectFourModel) {
-            ConnectFourModel realModel = (ConnectFourModel) model;
-            int[][] original = realModel.getGrid();
-            return copyBoard(original);
-        }
-        return new int[7][6];
-    }
-
-    private int[][] copyBoard(int[][] source) {
-        int[][] target = new int[7][6];
-        for (int c = 0; c < 7; c++) {
-            for (int r = 0; r < 6; r++) {
-                target[c][r] = source[c][r];
+    /**
+     * Print board for debugging
+     */
+    public void printBoard(int[][] state) {
+        for (int row = 0; row < 6; row++) {
+            for (int col = 0; col < 7; col++) {
+                System.out.print((state[col][row] == -1 ? "." : state[col][row]) + " ");
             }
+            System.out.println();
         }
-        return target;
+        System.out.println();
     }
 }
