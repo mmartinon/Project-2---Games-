@@ -1,8 +1,8 @@
 package c4;
+
 import c4.mvc.ConnectFourController;
 import c4.mvc.ConnectFourModel;
 import c4.players.*;
-import java.util.HashMap;
 
 public class ConnectFour {
 
@@ -64,5 +64,4 @@ public class ConnectFour {
 		System.out.print("Player 2 record (W-L-D): "+results[2]+"-"+results[1]+"-"+results[0]);
 		System.out.println(" (including "+forfeits[2]+" forfeits)");
 	}
-
 }
