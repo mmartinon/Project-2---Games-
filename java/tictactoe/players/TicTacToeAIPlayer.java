@@ -1,6 +1,7 @@
 package tictactoe.players;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import tictactoe.mvc.TicTacToeModel;
 
@@ -112,23 +113,58 @@ public class TicTacToeAIPlayer extends TicTacToePlayer {
 			return 'O';
 	}
 	
-	public int getMove(){
-		/* REPLACE WITH YOUR CODE */
-		return -1;
-	}
+	@Override
+    public int getMove() {
+        int move = alphaBetaSearch(model.getGrid());
+        return move;
+    }
 	
-	public int alphaBetaSearch(char[][] state){
-		/* REPLACE WITH YOUR CODE */
-		return -1;
-	}
+	private int alphaBetaSearch(char[][] state) {
+        int bestMove = -1;
+        int bestValue = Integer.MIN_VALUE;
+        int alpha = Integer.MIN_VALUE;
+        int beta = Integer.MAX_VALUE;
+        
+        for (int action : actions(state)) {
+            char[][] newState = result(state, action);
+            
+            int value = minValue(newState, alpha, beta);
+            
+            if (value > bestValue) {
+                bestValue = value;
+                bestMove = action;
+            }
+            alpha = Math.max(alpha, bestValue);
+        }
+        System.out.println("Best move: " + bestMove + " | Score: " + bestValue);
+        return bestMove;
+    }
 	
-	public int maxValue(char[][] state, int alpha, int beta){
-		/* REPLACE WITH YOUR CODE */
-		return -1;
-	}
+	private int maxValue(char[][] state, int alpha, int beta) {
+        if (terminalTest(state)) {
+            return utility(state);
+        }
+
+        int value = Integer.MIN_VALUE;
+        for (int action : actions(state)) {
+            value = Math.max(value, minValue(result(state, action), alpha, beta));
+            if (value >= beta) return value;
+            alpha = Math.max(alpha, value);
+        }
+        return value;
+    }
 	
-	public int minValue(char[][] state, int alpha, int beta){
-		/* REPLACE WITH YOUR CODE */
-		return -1;
-	}
+	private int minValue(char[][] state, int alpha, int beta) {
+        if (terminalTest(state)) {
+            return utility(state);
+        }
+
+        int value = Integer.MAX_VALUE;
+        for (int action : actions(state)) {
+            value = Math.min(value, maxValue(result(state, action), alpha, beta));
+            if (value <= alpha) return value;
+            beta = Math.min(beta, value);
+        }
+        return value;
+    }
 }
