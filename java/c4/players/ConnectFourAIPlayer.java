@@ -1,5 +1,7 @@
 package c4.players;
 
+import java.util.ArrayList;
+
 import c4.mvc.ConnectFourModel;
 
 public class ConnectFourAIPlayer extends ConnectFourPlayer {
