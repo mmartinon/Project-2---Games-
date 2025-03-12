@@ -2,6 +2,7 @@ package c4;
 import c4.mvc.ConnectFourController;
 import c4.mvc.ConnectFourModel;
 import c4.players.*;
+import java.util.HashMap;
 
 public class ConnectFour {
 

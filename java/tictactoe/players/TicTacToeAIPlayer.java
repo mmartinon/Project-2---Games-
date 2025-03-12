@@ -1,7 +1,6 @@
 package tictactoe.players;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import tictactoe.mvc.TicTacToeModel;
 
